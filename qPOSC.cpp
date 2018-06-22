@@ -100,7 +100,7 @@ void qPOSC::doAction()
         points[i][2] = static_cast<double>(P->z);
     }
 
-
+/*  PCA
     std::cout << "original:\n";
     for(int i = 0; i < pointsNumber; i++)
     {
@@ -114,6 +114,14 @@ void qPOSC::doAction()
 
 
     cov(points, pointsNumber, 3);
+PCA  */
+
+
+
+
+
+
+
     deleteDoubleMatrix(points, pointsNumber);
 
 
