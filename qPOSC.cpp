@@ -20,6 +20,7 @@
 //my
 #include "qPOSC.h"
 #include "ccPoscDlg.h"
+#include "SPG.h"
 
 //Qt
 #include <QtGui>
@@ -27,12 +28,30 @@
 
 //qCC_db
 #include <ccPointCloud.h>
+#include <ccPolyline.h>
 
 //system
 #include <iostream>
 
 //functions
 #include "functions.h"
+
+
+/*	QCC_DB_LIB_API extern const Rgba white;
+    QCC_DB_LIB_API extern const Rgba lightGrey;
+    QCC_DB_LIB_API extern const Rgba darkGrey;
+    QCC_DB_LIB_API extern const Rgba red;
+    QCC_DB_LIB_API extern const Rgba green;
+    QCC_DB_LIB_API extern const Rgba blue;
+    QCC_DB_LIB_API extern const Rgba darkBlue;
+    QCC_DB_LIB_API extern const Rgba magenta;
+    QCC_DB_LIB_API extern const Rgba cyan;
+    QCC_DB_LIB_API extern const Rgba orange;
+    QCC_DB_LIB_API extern const Rgba black;
+    QCC_DB_LIB_API extern const Rgba yellow;
+ */
+static ccColor::Rgb colors[3] = {ccColor::white,ccColor::black,ccColor::blue };
+static int current = 0;
 
 qPOSC::qPOSC(QObject* parent/*=0*/)
 	: QObject(parent)
@@ -73,12 +92,49 @@ void qPOSC::doAction()
 
 
     const ccHObject::Container& selectedEntities = m_app->getSelectedEntities();
+
     size_t selNum = selectedEntities.size();
-    if (selNum!=1)
+    if (selNum<1)
     {
-        m_app->dispToConsole("Select only one cloud!",ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+        m_app->dispToConsole("Select at least one cloud!",ccMainAppInterface::ERR_CONSOLE_MESSAGE);
         return;
     }
+
+
+    ccColor::Rgb color = colors[current++];
+    current %= 3;
+    for (int i = 0; i < selNum; i++)
+    {
+        ccHObject* ent = selectedEntities[i];
+        assert(ent);
+        if (!ent || !ent->isA(CC_TYPES::POINT_CLOUD))
+        {
+            //m_app->dispToConsole("Select a real point cloud!",ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            return;
+        }
+
+
+        ccPointCloud* pc = static_cast<ccPointCloud*>(ent);
+        int pointsNumber = pc->size();
+
+        ccPolyline *poly = new ccPolyline(pc) ;
+        poly->addPointIndex(0,pointsNumber);
+
+        poly->setColor(color) ;
+
+        poly->setWidth(4);
+        pc->addChild(poly);
+        m_app->addToDB(poly);
+        poly->showColors(true);
+        pc->redrawDisplay();
+    }
+
+
+
+
+
+    /*
+
     ccHObject* ent = selectedEntities[0];
     assert(ent);
     if (!ent || !ent->isA(CC_TYPES::POINT_CLOUD))
@@ -88,6 +144,8 @@ void qPOSC::doAction()
     }
 
     ccPointCloud* pc = static_cast<ccPointCloud*>(ent);
+
+
 
     int pointsNumber = pc->size();
     double **points = newDoubleMatrix(pointsNumber, 3);
@@ -99,6 +157,26 @@ void qPOSC::doAction()
         points[i][1] = static_cast<double>(P->y);
         points[i][2] = static_cast<double>(P->z);
     }
+
+    ccPointCloud *newCloud = getNewCloud(points);
+*/
+
+
+
+
+/*   color
+    if (pc->reserveTheRGBTable())
+    {
+        pc->setRGBColor(static_cast<ColorCompType>(255),static_cast<ColorCompType>(0),static_cast<ColorCompType>(0) );
+        m_app->setSelectedInDB(ent, false);
+        pc->showSF(false);
+        pc->showColors(true);
+        pc->redrawDisplay();
+        //m_app->redrawAll();
+        //m_app->setSelectedInDB(ent, true);
+    }
+color   */
+
 
 /*  PCA
     std::cout << "original:\n";
@@ -119,10 +197,12 @@ PCA  */
 
 
 
+    //m_app->doActionAddConstantSF();
 
 
 
-    deleteDoubleMatrix(points, pointsNumber);
+
+    //deleteDoubleMatrix(points, pointsNumber);
 
 
 }
