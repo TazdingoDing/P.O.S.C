@@ -50,7 +50,7 @@
     QCC_DB_LIB_API extern const Rgba black;
     QCC_DB_LIB_API extern const Rgba yellow;
  */
-static ccColor::Rgb colors[3] = {ccColor::white,ccColor::black,ccColor::blue };
+static ccColor::Rgb colors[3] = {ccColor::red,ccColor::black,ccColor::blue };
 static int current = 0;
 
 qPOSC::qPOSC(QObject* parent/*=0*/)
@@ -101,8 +101,7 @@ void qPOSC::doAction()
     }
 
 
-    ccColor::Rgb color = colors[current++];
-    current %= 3;
+
     for (int i = 0; i < selNum; i++)
     {
         ccHObject* ent = selectedEntities[i];
@@ -114,18 +113,31 @@ void qPOSC::doAction()
         }
 
 
+
         ccPointCloud* pc = static_cast<ccPointCloud*>(ent);
         int pointsNumber = pc->size();
+        if (pointsNumber%2 != 0)
+        {
+            m_app->dispToConsole("points number not 2x",ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+            return;
+        }
 
-        ccPolyline *poly = new ccPolyline(pc) ;
-        poly->addPointIndex(0,pointsNumber);
+        ccColor::Rgb color = colors[current++];
+        current %= 3;
 
-        poly->setColor(color) ;
+        ccPolyline **poly = new ccPolyline*[pointsNumber/2];
+        for (int j =0; j < pointsNumber; j+=2)
+        {
+            int index = j/2;
+            poly[index] = new ccPolyline(pc);
+            poly[index]-> addPointIndex(j,j+2);
+            poly[index]->setColor(color) ;
+            poly[index]->setWidth(4);
+            pc->addChild(poly[index]);
+            m_app->addToDB(poly[index]);
+            poly[index]->showColors(true);
 
-        poly->setWidth(4);
-        pc->addChild(poly);
-        m_app->addToDB(poly);
-        poly->showColors(true);
+        }
         pc->redrawDisplay();
     }
 
